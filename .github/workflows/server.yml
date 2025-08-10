@@ -54,6 +54,7 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
           PUBLIC_SSH_KEY: ${{ env.PUBLIC_SSH_KEY }}
+          ANSIBLE_INVENTORY_GROUP: production
 
   staging:
     if: ${{ github.event.inputs.environment == 'staging' }}
@@ -96,3 +97,4 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
           PUBLIC_SSH_KEY: ${{ env.PUBLIC_SSH_KEY }}
+          ANSIBLE_INVENTORY_GROUP: staging
