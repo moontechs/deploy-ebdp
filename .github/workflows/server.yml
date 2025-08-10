@@ -1,0 +1,94 @@
+name: Setup server
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+
+jobs:
+  production:
+    if: ${{ github.event.inputs.environment == 'production' }}
+    runs-on: ubuntu-latest
+    env:
+      SSH_KEY_PATH: /tmp/ssh_key
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Create inventory file
+        run: |
+          mkdir -p inventory/production
+          cat > inventory/production/hosts << EOF
+          [production]
+          prod ansible_host=${{ secrets.PRODUCTION_SSH_HOST }} ansible_user=root
+          EOF
+
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
+          chmod 600 ${{ env.SSH_KEY_PATH }}
+          # Extract public key and set as environment variable
+          PUBLIC_SSH_KEY=$(ssh-keygen -y -f ${{ env.SSH_KEY_PATH }})
+          echo "PUBLIC_SSH_KEY=$PUBLIC_SSH_KEY" >> $GITHUB_ENV
+
+      - name: Run Ansible playbook
+        run: |
+          ansible-playbook -i ./inventory/production/hosts ./ansible/setup.yml --private-key=${{ env.SSH_KEY_PATH }}
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+          PUBLIC_SSH_KEY: ${{ env.PUBLIC_SSH_KEY }}
+
+  staging:
+    if: ${{ github.event.inputs.environment == 'staging' }}
+    runs-on: ubuntu-latest
+    env:
+      SSH_KEY_PATH: /tmp/ssh_key
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Create inventory file
+        run: |
+          mkdir -p inventory/staging
+          cat > inventory/staging/hosts << EOF
+          [staging]
+          staging ansible_host=${{ secrets.STAGING_SSH_HOST }} ansible_user=root
+          EOF
+
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
+          chmod 600 ${{ env.SSH_KEY_PATH }}
+          # Extract public key and set as environment variable
+          PUBLIC_SSH_KEY=$(ssh-keygen -y -f ${{ env.SSH_KEY_PATH }})
+          echo "PUBLIC_SSH_KEY=$PUBLIC_SSH_KEY" >> $GITHUB_ENV
+
+      - name: Run Ansible playbook
+        run: |
+          ansible-playbook -i ./inventory/staging/hosts ./ansible/setup.yml --private-key=${{ env.SSH_KEY_PATH }}
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+          PUBLIC_SSH_KEY: ${{ env.PUBLIC_SSH_KEY }}

@@ -1,0 +1,103 @@
+---
+- name: Set up server for club application
+  hosts: production
+  become: yes
+  vars:
+    deploy_user: deploy
+    deploy_home: "/home/{{ deploy_user }}"
+    project_dir: "{{ deploy_home }}/club"
+    uploads_dir: "{{ deploy_home }}/uploads"
+    database_dir: "{{ deploy_home }}/database"
+    cloudflare_dir: "{{ deploy_home }}/cloudflare"
+    pepic_dir: "{{ deploy_home }}/pepic"
+
+  tasks:
+    - name: Create deploy user
+      user:
+        name: "{{ deploy_user }}"
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Create .ssh directory for deploy user
+      file:
+        path: "{{ deploy_home }}/.ssh"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0700'
+
+    - name: Add existing SSH key to deploy user
+      authorized_key:
+        user: "{{ deploy_user }}"
+        key: "{{ lookup('env', 'PUBLIC_SSH_KEY') }}"
+        state: present
+
+#    - name: Set up authorized_keys for deploy user
+#      copy:
+#        content: "{{ lookup('env', 'DEPLOY_SSH_PUBLIC_KEY') }}"
+#        dest: "{{ deploy_home }}/.ssh/authorized_keys"
+#        owner: "{{ deploy_user }}"
+#        group: "{{ deploy_user }}"
+#        mode: '0600'
+#      when: lookup('env', 'DEPLOY_SSH_PUBLIC_KEY') != ""
+
+    - name: Create project directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0755'
+      loop:
+        - "{{ project_dir }}"
+        - "{{ project_dir }}/frontend/static"
+        - "{{ project_dir }}/gdpr/downloads"
+        - "{{ uploads_dir }}"
+        - "{{ database_dir }}"
+        - "{{ database_dir }}/data"
+        - "{{ cloudflare_dir }}"
+        - "{{ pepic_dir }}"
+
+#    - name: Install Docker dependencies
+#      apt:
+#        name:
+#          - apt-transport-https
+#          - ca-certificates
+#          - curl
+#          - gnupg
+#          - lsb-release
+#        state: present
+#        update_cache: yes
+#
+#    - name: Add Docker GPG key
+#      apt_key:
+#        url: https://download.docker.com/linux/ubuntu/gpg
+#        state: present
+#
+#    - name: Add Docker repository
+#      apt_repository:
+#        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+#        state: present
+#
+#    - name: Install Docker
+#      apt:
+#        name:
+#          - docker-ce
+#          - docker-ce-cli
+#          - containerd.io
+#          - docker-compose-plugin
+#        state: present
+#        update_cache: yes
+
+    - name: Add deploy user to docker group
+      user:
+        name: "{{ deploy_user }}"
+        groups: docker
+        append: yes
+
+    - name: Make sure Docker is running
+      service:
+        name: docker
+        state: started
+        enabled: yes

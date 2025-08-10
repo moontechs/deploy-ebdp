@@ -1,0 +1,130 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_version:
+        description: 'Tag version for the image'
+        required: true
+        default: '1.1.4'
+
+jobs:
+  check-and-build:
+    name: Check image and build if needed
+    runs-on: ubuntu-latest
+    outputs:
+      image_exists: ${{ steps.check-image.outputs.exists }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if image exists
+        id: check-image
+        run: |
+          if docker manifest inspect ghcr.io/${{ github.repository_owner }}/offline.club:${{ github.event.inputs.tag_version }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Image exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Image does not exist, will trigger build workflow"
+          fi
+
+      - name: Trigger build workflow
+        if: steps.check-image.outputs.exists == 'false'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Build Club
+          ref: main
+          inputs: '{"tag_version": "${{ github.event.inputs.tag_version }}"}'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: check-and-build
+    env:
+      SSH_KEY_PATH: /tmp/ssh_key
+      TAG_VERSION: ${{ github.event.inputs.tag_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Make app envfile
+        run: export | grep "secret_" | sed "s/declare -x secret_//" > .env
+        env:
+          secret_SECRET_KEY: ${{ secrets.SECRET_KEY }} #+
+          secret_APP_HOST: ${{ secrets.APP_HOST }} #+
+          secret_MEDIA_UPLOAD_URL: ${{ secrets.PRODUCTION_MEDIA_UPLOAD_URL }} #+
+          secret_MEDIA_UPLOAD_CODE: ${{ secrets.PRODUCTION_MEDIA_UPLOAD_CODE }} #+
+          secret_SENTRY_DSN: ${{ secrets.SENTRY_DSN }} #+
+          secret_DEFAULT_FROM_EMAIL: ${{ secrets.PRODUCTION_DEFAULT_FROM_EMAIL }} #+
+          secret_EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          secret_EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+          secret_EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          secret_TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }} #+
+          secret_TELEGRAM_BOT_URL: ${{ secrets.TELEGRAM_BOT_URL }} #+
+          secret_TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }} #+
+          secret_TELEGRAM_BOT_WEBHOOK_URL: ${{ secrets.TELEGRAM_BOT_WEBHOOK_URL}} #+
+          secret_TELEGRAM_CLUB_CHANNEL_URL: ${{ secrets.TELEGRAM_CLUB_CHANNEL_URL }}
+          secret_TELEGRAM_CLUB_CHANNEL_ID: ${{ secrets.TELEGRAM_CLUB_CHANNEL_ID }}
+          secret_TELEGRAM_CLUB_CHAT_URL: ${{ secrets.TELEGRAM_CLUB_CHAT_URL }}
+          secret_TELEGRAM_CLUB_CHAT_ID: ${{ secrets.TELEGRAM_CLUB_CHAT_ID }}
+          secret_TELEGRAM_ONLINE_CHANNEL_URL: ${{ secrets.TELEGRAM_ONLINE_CHANNEL_URL }}
+          secret_TELEGRAM_ONLINE_CHANNEL_ID: ${{ secrets.TELEGRAM_ONLINE_CHANNEL_ID }}
+          secret_TELEGRAM_HELP_DESK_BOT_QUESTION_CHANNEL_DISCUSSION_ID: ${{ secrets.TELEGRAM_HELP_DESK_BOT_QUESTION_CHANNEL_DISCUSSION_ID }}
+          secret_TELEGRAM_HELP_DESK_BOT_QUESTION_CHANNEL_ID: ${{ secrets.TELEGRAM_HELP_DESK_BOT_QUESTION_CHANNEL_ID }}
+          secret_TELEGRAM_HELP_DESK_BOT_TOKEN: ${{ secrets.TELEGRAM_HELP_DESK_BOT_TOKEN }}
+          secret_STRIPE_ACTIVE: ${{ secrets.STRIPE_ACTIVE }}
+          secret_STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+          secret_STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
+          secret_STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          secret_STRIPE_CAMP_WEBHOOK_SECRET: ${{ secrets.STRIPE_CAMP_WEBHOOK_SECRET }}
+          secret_COINBASE_WEBHOOK_SECRET: ${{ secrets.COINBASE_WEBHOOK_SECRET }}
+          secret_PATREON_CLIENT_ID: ${{ secrets.PATREON_CLIENT_ID }}
+          secret_PATREON_CLIENT_SECRET: ${{ secrets.PATREON_CLIENT_SECRET }}
+          secret_JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+          secret_WEBHOOK_SECRETS: ${{ secrets.WEBHOOK_SECRETS }}
+          secret_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }} #+
+          secret_POSTGRES_USER: ${{ secrets.POSTGRES_USER }} #+
+          secret_POSTGRES_DB: ${{ secrets.POSTGRES_DB }} #+
+
+      - name: Make postgres envfile
+        run: export | grep "secret_" | sed "s/declare -x secret_//" > .postgres_env
+        env:
+          secret_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          secret_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          secret_POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+
+      - name: Make cloudflare envfile
+        run: export | grep "secret_" | sed "s/declare -x secret_//" > .cloudflare_env
+        env:
+          secret_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }} #+
+
+      - name: Make pepic envfile
+        run: export | grep "secret_" | sed "s/declare -x secret_//" > .pepic_env
+        env:
+          secret_BASE_URL: ${{ secrets.PRODUCTION_PEPIC_BASE_URL }} #+
+          secret_SECRET_CODE: ${{ secrets.PRODUCTION_PEPIC_SECRET_CODE }} #+
+
+      - run: echo "TAG_VERSION=${{ github.event.inputs.tag_version }}" >> .env
+
+      - run: echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }} && chmod 600 ${{ env.SSH_KEY_PATH }}
+
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .env ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/club/.env
+
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .postgres_env ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/database/.env
+
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/cloudflare/.env
+
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .pepic_env ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/pepic/.env
+
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.production.yml ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/club/docker-compose.production.yml
+
+      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }} "cd /home/deploy/club && docker pull ghcr.io/${{ github.repository_owner }}/offline.club:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.production.yml --env-file=.env up -d && docker system prune --all --force"

@@ -1,0 +1,203 @@
+version: "3.8"
+
+services:
+  club_app: &app
+    image: ghcr.io/moontechs/:${TAG_VERSION:-latest}
+    command: make docker-run-production
+    container_name: club_app
+    networks:
+      - club_network
+    environment:
+      - MODE=production
+      - PYTHONUNBUFFERED=1
+      - DEBUG=false
+      - REDIS_DB=0
+      - REDIS_HOST=redis
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PASSWORD
+      - EMAIL_HOST
+      - EMAIL_PORT
+      - EMAIL_USE_TLS=true
+      - EMAIL_USE_SSL=false
+    env_file:
+      - .env
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./frontend/static:/tmp/static
+      - ./gdpr/downloads:/app/gdpr/downloads
+    depends_on:
+      - redis
+      - postgres
+      - pepic
+    ports:
+      - "127.0.0.1:8814:8814"
+    labels:
+      reproxy.server: "xxx-111.xyz"
+      reproxy.route: "^/(.*)"
+      reproxy.dest: "/$$1"
+      reproxy.assets: "/static:/frontend/static"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
+        max-file: "3"
+
+  postgres:
+    image: postgres:14
+    container_name: club_postgres
+    user: "1000"
+    networks:
+      - club_network
+    env_file:
+      - /home/deploy/database/.env
+    volumes:
+      - /home/deploy/database/data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  queue:
+    <<: *app
+    command: make docker-run-queue
+    container_name: club_queue
+    networks:
+      - club_network
+    ports: []
+
+  bot:
+    <<: *app
+    command: make docker-run-bot
+    container_name: club_bot
+    networks:
+      - club_network
+    ports:
+      - "8816:8816"
+    labels:
+      reproxy.server: "telegram.xxx-111.xyz"
+      reproxy.route: "^/(.*)"
+      reproxy.dest: "/$$1"
+
+  pepic:
+    image: ghcr.io/mkoziy/pepic:latest
+    container_name: club_pepic
+    environment:
+      - STORAGE_DIR=/uploads
+      - IMAGE_ORIGINAL_LENGTH=1400
+      - MAX_UPLOAD_SIZE=100M
+    env_file:
+      - /home/deploy/pepic/.env
+    volumes:
+      - /home/deploy/uploads:/uploads
+    ports:
+      - "127.0.0.1:8118:8118"
+    user: "1000"
+    restart: unless-stopped
+    networks:
+      - club_network
+    labels:
+      reproxy.server: "images.xxx-111.xyz"
+      reproxy.route: "^/(.*)"
+      reproxy.dest: "/$$1"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
+
+#  helpdeskbot:
+#    <<: *app
+#    command: make docker-run-helpdeskbot
+#    container_name: club_help_desk_bot
+#    networks:
+#      - club_network
+#    ports:
+#      - "8817:8817"
+
+  cron:
+    <<: *app
+    command: make docker-run-cron
+    container_name: club_cron
+    networks:
+      - club_network
+    ports: []
+
+  redis:
+    image: redis:alpine
+    container_name: club_redis
+    restart: unless-stopped
+    networks:
+      - club_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+
+  cloudflare:
+    image: cloudflare/cloudflared:latest
+    container_name: club_cloudflare
+    restart: unless-stopped
+    networks:
+      - club_network
+    env_file:
+      - /home/deploy/cloudflare/.env
+    command: tunnel --no-autoupdate run
+    volumes:
+      - /home/deploy/cloudflare/cloudflared:/etc/cloudflared
+
+  club_app_reproxy:
+    image: umputun/reproxy:latest
+    container_name: club_app_reproxy
+    restart: unless-stopped
+    networks:
+      - club_network
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - LISTEN=0.0.0.0:8080
+      - DOCKER_ENABLED=true
+      - MAX_SIZE=30M
+      - DEBUG=true
+      - KEEP_HOST=true
+    volumes:
+      - ./frontend/static:/frontend/static:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - club_app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
+        max-file: "3"
+
+  pepic_reproxy:
+    image: umputun/reproxy:latest
+    container_name: pepic_reproxy
+    restart: unless-stopped
+    networks:
+      - club_network
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      - LISTEN=0.0.0.0:8081
+      - DOCKER_ENABLED=true
+      - MAX_SIZE=30M
+      - DEBUG=true
+      - KEEP_HOST=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - pepic
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
+        max-file: "3"
+
+networks:
+  club_network:
+    driver: bridge
