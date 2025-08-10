@@ -1,15 +1,13 @@
 ---
 - name: Set up server for club application
-  hosts: production
+  hosts: "{{ lookup('env', 'ANSIBLE_INVENTORY_GROUP') | default('production') }}"
   become: yes
   vars:
     deploy_user: deploy
     deploy_home: "/home/{{ deploy_user }}"
     project_dir: "{{ deploy_home }}/club"
-    uploads_dir: "{{ deploy_home }}/uploads"
     database_dir: "{{ deploy_home }}/database"
     cloudflare_dir: "{{ deploy_home }}/cloudflare"
-    pepic_dir: "{{ deploy_home }}/pepic"
 
   tasks:
     - name: Create deploy user
@@ -51,13 +49,10 @@
         mode: '0755'
       loop:
         - "{{ project_dir }}"
-        - "{{ project_dir }}/frontend/static"
-        - "{{ project_dir }}/gdpr/downloads"
-        - "{{ uploads_dir }}"
+        - "{{ project_dir }}/storage/app/public"
         - "{{ database_dir }}"
         - "{{ database_dir }}/data"
         - "{{ cloudflare_dir }}"
-        - "{{ pepic_dir }}"
 
 #    - name: Install Docker dependencies
 #      apt:
