@@ -67,7 +67,8 @@ jobs:
 
       - name: Make app envfile
         run: |
-          export | grep "secret_${env.ENV_PREFIX}_" | sed "s/declare -x secret_${env.ENV_PREFIX}_//" > .env
+          export ENV_PREFIX=${{ env.ENV_PREFIX }}
+          export | grep "secret_${ENV_PREFIX}_" | sed "s/declare -x secret_${ENV_PREFIX}_//" > .env
         env:
           secret_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
           secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', env.ENV_PREFIX)] }}
