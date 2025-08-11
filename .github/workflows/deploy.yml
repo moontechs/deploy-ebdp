@@ -8,9 +8,9 @@ on:
         required: true
         type: choice
         options:
-          - production
-          - staging
-        default: staging
+          - PRODUCTION
+          - STAGING
+        default: STAGING
       tag_version:
         description: 'Tag version for the image'
         required: true
@@ -60,15 +60,14 @@ jobs:
     env:
       SSH_KEY_PATH: /tmp/ssh_key
       TAG_VERSION: ${{ github.event.inputs.tag_version }}
-      ENV_PREFIX: $(echo "${{ github.event.inputs.environment }}" | tr '[:lower:]' '[:upper:]')
+      ENV_PREFIX: ${{ github.event.inputs.environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Make app envfile
         run: |
-          export ENV_PREFIX=${{ env.ENV_PREFIX }}
-          export | grep "secret_${ENV_PREFIX}_" | sed "s/declare -x secret_${ENV_PREFIX}_//" > .env
+          export | grep "secret_${{env.ENV_PREFIX}}_" | sed "s/declare -x secret_${{env.ENV_PREFIX}}_//" > .env
         env:
           secret_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
           secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', env.ENV_PREFIX)] }}
