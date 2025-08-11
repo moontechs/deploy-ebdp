@@ -67,61 +67,60 @@ jobs:
       - name: Make app envfile
         run: |
           ENV_PREFIX=$(echo "${{ github.event.inputs.environment }}" | tr '[:lower:]' '[:upper:]')
+          export ENV_PREFIX
           export | grep "secret_${ENV_PREFIX}_" | sed "s/declare -x secret_${ENV_PREFIX}_//" > .env
         env:
-          secret_PRODUCTION_APP_NAME: ${{ secrets.PRODUCTION_APP_NAME }}
-          secret_STAGING_APP_NAME: ${{ secrets.STAGING_APP_NAME }}
-          secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', github.event.inputs.environment)] }}
+          secret_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
+          secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', env.ENV_PREFIX)] }}
           secret_APP_ENV: ${{ secrets[github.event.inputs.environment] }}
-          secret_APP_FAKER_LOCALE: en_US
           secret_APP_FALLBACK_LOCALE: en
-          secret_APP_KEY: ${{ secrets[format('{0}_APP_KEY', github.event.inputs.environment)] }}
+          secret_APP_KEY: ${{ secrets[format('{0}_APP_KEY', env.ENV_PREFIX)] }}
           secret_APP_LOCALE: en
           secret_APP_MAINTENANCE_DRIVER: file
-          secret_APP_URL: ${{ secrets[format('{0}_APP_URL', github.event.inputs.environment)] }}
+          secret_APP_URL: ${{ secrets[format('{0}_APP_URL', env.ENV_PREFIX)] }}
           secret_BCRYPT_ROUNDS: 12
           secret_BROADCAST_CONNECTION: log
           secret_CACHE_STORE: file
           secret_DB_CONNECTION: pgsql
-          secret_DB_DATABASE: ${{ secrets[format('{0}_DB_DATABASE', github.event.inputs.environment)] }}
-          secret_DB_HOST: ${{ secrets[format('{0}_DB_HOST', github.event.inputs.environment)] }}
-          secret_DB_PASSWORD: ${{ secrets[format('{0}_DB_PASSWORD', github.event.inputs.environment)] }}
-          secret_DB_PORT: ${{ secrets[format('{0}_DB_PORT', github.event.inputs.environment)] }}
-          secret_DB_USERNAME: ${{ secrets[format('{0}_DB_USERNAME', github.event.inputs.environment)] }}
+          secret_DB_DATABASE: ${{ secrets[format('{0}_DB_DATABASE', env.ENV_PREFIX)] }}
+          secret_DB_HOST: ${{ secrets[format('{0}_DB_HOST', env.ENV_PREFIX)] }}
+          secret_DB_PASSWORD: ${{ secrets[format('{0}_DB_PASSWORD', env.ENV_PREFIX)] }}
+          secret_DB_PORT: ${{ secrets[format('{0}_DB_PORT', env.ENV_PREFIX)] }}
+          secret_DB_USERNAME: ${{ secrets[format('{0}_DB_USERNAME', env.ENV_PREFIX)] }}
           secret_FILESYSTEM_DISK: public
           secret_LOG_CHANNEL: stdout
           secret_LOG_DEPRECATIONS_CHANNEL: null
-          secret_LOG_LEVEL: ${{ secrets[format('{0}_LOG_LEVEL', github.event.inputs.environment)] }}
+          secret_LOG_LEVEL: ${{ secrets[format('{0}_LOG_LEVEL', env.ENV_PREFIX)] }}
           secret_LOG_STACK: stack
           secret_MAIL_ENCRYPTION: tls
-          secret_MAIL_FROM_ADDRESS: ${{ secrets[format('{0}_MAIL_FROM_ADDRESS', github.event.inputs.environment)] }}
+          secret_MAIL_FROM_ADDRESS: ${{ secrets[format('{0}_MAIL_FROM_ADDRESS', env.ENV_PREFIX)] }}
           secret_MAIL_FROM_NAME: ${APP_NAME}
-          secret_MAIL_HOST: ${{ secrets[format('{0}_MAIL_HOST', github.event.inputs.environment)] }}
+          secret_MAIL_HOST: ${{ secrets[format('{0}_MAIL_HOST', env.ENV_PREFIX)] }}
           secret_MAIL_MAILER: smtp
-          secret_MAIL_PASSWORD: ${{ secrets[format('{0}_MAIL_PASSWORD', github.event.inputs.environment)] }}
-          secret_MAIL_PORT: ${{ secrets[format('{0}_MAIL_PORT', github.event.inputs.environment)] }}
+          secret_MAIL_PASSWORD: ${{ secrets[format('{0}_MAIL_PASSWORD', env.ENV_PREFIX)] }}
+          secret_MAIL_PORT: ${{ secrets[format('{0}_MAIL_PORT', env.ENV_PREFIX)] }}
           secret_MAIL_SCHEME: null
-          secret_MAIL_USERNAME: ${{ secrets[format('{0}_MAIL_USERNAME', github.event.inputs.environment)] }}
+          secret_MAIL_USERNAME: ${{ secrets[format('{0}_MAIL_USERNAME', env.ENV_PREFIX)] }}
           secret_PHP_CLI_SERVER_WORKERS: 4
           secret_QUEUE_CONNECTION: redis
           secret_REDIS_CLIENT: phpredis
-          secret_REDIS_HOST: ${{ secrets[format('{0}_REDIS_HOST', github.event.inputs.environment)] }}
+          secret_REDIS_HOST: ${{ secrets[format('{0}_REDIS_HOST', env.ENV_PREFIX)] }}
           secret_REDIS_PASSWORD: null
-          secret_REDIS_PORT: ${{ secrets[format('{0}_REDIS_PORT', github.event.inputs.environment)] }}
-          secret_SENTRY_LARAVEL_DSN: ${{ secrets[format('{0}_SENTRY_LARAVEL_DSN', github.event.inputs.environment)] }}
+          secret_REDIS_PORT: ${{ secrets[format('{0}_REDIS_PORT', env.ENV_PREFIX)] }}
+          secret_SENTRY_LARAVEL_DSN: ${{ secrets[format('{0}_SENTRY_LARAVEL_DSN', env.ENV_PREFIX)] }}
           secret_SESSION_DOMAIN: null
           secret_SESSION_DRIVER: database
           secret_SESSION_ENCRYPT: true
-          secret_SESSION_LIFETIME: ${{ secrets[format('{0}_SESSION_LIFETIME', github.event.inputs.environment)] }}
+          secret_SESSION_LIFETIME: ${{ secrets[format('{0}_SESSION_LIFETIME', env.ENV_PREFIX)] }}
           secret_SESSION_PATH: /
           secret_VITE_APP_NAME: ${APP_NAME}
 
       - name: Make postgres envfile
         run: export | grep "secret_" | sed "s/declare -x secret_//" > .postgres_env
         env:
-          secret_POSTGRES_PASSWORD: ${{ secrets[format('{0}_DB_PASSWORD', github.event.inputs.environment)] }}
-          secret_POSTGRES_USER: ${{ secrets[format('{0}_DB_USERNAME', github.event.inputs.environment)] }}
-          secret_POSTGRES_DB: ${{ secrets[format('{0}_DB_DATABASE', github.event.inputs.environment)] }}
+          secret_POSTGRES_PASSWORD: ${{ secrets[format('{0}_DB_PASSWORD', env.ENV_PREFIX)] }}
+          secret_POSTGRES_USER: ${{ secrets[format('{0}_DB_USERNAME', env.ENV_PREFIX)] }}
+          secret_POSTGRES_DB: ${{ secrets[format('{0}_DB_DATABASE', env.ENV_PREFIX)] }}
 
       - name: Make cloudflare envfile
         run: export | grep "secret_" | sed "s/declare -x secret_//" > .cloudflare_env
@@ -137,13 +136,14 @@ jobs:
             echo "${{ secrets.STAGING_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
           fi
           chmod 600 ${{ env.SSH_KEY_PATH }}
+          export ENV_PREFIX
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .env ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment)] }}:/home/deploy/club/.env
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/.env
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .postgres_env ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment)] }}:/home/deploy/database/.env
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .postgres_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/database/.env
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment)] }}:/home/deploy/cloudflare/.env
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/cloudflare/.env
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.${{ github.event.inputs.environment }}".yml ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment)] }}:/home/deploy/club/docker-compose.${{ github.event.inputs.environment }}.yml
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.${{ env.ENV_PREFIX }}".yml ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/docker-compose.${{ env.ENV_PREFIX }}.yml
 
-      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.${{ github.event.inputs.environment }}.yml --env-file=.env up -d && docker system prune --all --force"
+      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.${{ env.ENV_PREFIX }}.yml --env-file=.env up -d && docker system prune --all --force"
