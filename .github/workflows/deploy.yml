@@ -130,7 +130,7 @@ jobs:
 
       - run: echo "TAG_VERSION=${{ github.event.inputs.tag_version }}" >> .env
 
-      - run: echo "${{ secrets[format('{0}_SSH_KEY', github.event.inputs.environment)] }}" > ${{ env.SSH_KEY_PATH }} && chmod 600 ${{ env.SSH_KEY_PATH }}
+      - run: echo "${{ secrets[format('{0}_SSH_KEY', github.event.inputs.environment.toUpperCase())] }}" > ${{ env.SSH_KEY_PATH }} && chmod 600 ${{ env.SSH_KEY_PATH }}
 
       - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .env ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment)] }}:/home/deploy/club/.env
 
