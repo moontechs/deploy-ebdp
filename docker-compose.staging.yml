@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   club_app: &app
     image: ghcr.io/moontechs/event-based-dating-platform:${TAG_VERSION:-latest}
@@ -45,7 +43,7 @@ services:
       - DEBUG=true
       - KEEP_HOST=true
     volumes:
-      - ./storage:./storage:ro
+      - ./storage:/storage:ro
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - club_app
