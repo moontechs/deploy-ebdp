@@ -17,41 +17,24 @@ services:
     ports:
       - "127.0.0.1:80:80"
       - "127.0.0.1:443:443"
-    labels:
-      reproxy.server: "xxx-111.xyz"
-      reproxy.route: "^/(.*)"
-      reproxy.dest: "/$$1"
-      reproxy.assets: "/storage:/storage"
+    command:
+      - make docker-server-php
     logging:
       driver: "json-file"
       options:
         max-size: "100M"
         max-file: "3"
 
-#  club_app_reproxy:
-#    image: umputun/reproxy:latest
-#    container_name: club_app_reproxy
-#    restart: unless-stopped
-#    networks:
-#      - club_network
-#    ports:
-#      - "127.0.0.1:8080:8080"
-#    environment:
-#      - LISTEN=0.0.0.0:8080
-#      - DOCKER_ENABLED=true
-#      - MAX_SIZE=50M
-#      - DEBUG=true
-#      - KEEP_HOST=true
-#    volumes:
-#      - ./storage:/storage:ro
-#      - /var/run/docker.sock:/var/run/docker.sock
-#    depends_on:
-#      - club_app
-#    logging:
-#      driver: "json-file"
-#      options:
-#        max-size: "100M"
-#        max-file: "3"
+  club_queue:
+    <<: *app
+    container_name: club_queue
+    command:
+      - make docker-server-queue
+    ports: []
+    depends_on:
+      - keydb
+      - postgres
+      - club_app
 
   postgres:
     image: postgres:17
