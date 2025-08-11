@@ -144,3 +144,20 @@ jobs:
           scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.${LOWER_ENV_PREFIX}.yml ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/docker-compose.yml
 
       - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.yml --env-file=.env up -d && docker system prune --all --force"
+
+      - name: Send Telegram notification
+        if: always()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            🐳 **Deploy**
+
+            **Env:** ${{ github.event.inputs.environment }}
+            **Version:** ${{ github.event.inputs.tag_version }}
+            **Status:** ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }}
+            **Actor:** ${{ github.actor }}
+
+            [View job on GitHub](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
