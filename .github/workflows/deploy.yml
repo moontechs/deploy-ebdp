@@ -1,4 +1,4 @@
-name: Deploy production
+name: Deploy
 
 on:
   workflow_dispatch:
@@ -10,11 +10,11 @@ on:
         options:
           - production
           - staging
-        default: production
+        default: staging
       tag_version:
         description: 'Tag version for the image'
         required: true
-        default: '1.1.4'
+        default: '0.2.14'
 
 jobs:
   check-and-build:
