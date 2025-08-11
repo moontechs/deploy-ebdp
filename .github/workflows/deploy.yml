@@ -153,7 +153,7 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: markdown
           message: |
-            🐳 **Deploy**
+            🚀 **Deploy**
 
             **Env:** ${{ github.event.inputs.environment }}
             **Version:** ${{ github.event.inputs.tag_version }}
