@@ -60,6 +60,7 @@ jobs:
     env:
       SSH_KEY_PATH: /tmp/ssh_key
       TAG_VERSION: ${{ github.event.inputs.tag_version }}
+      ENV_PREFIX: $(echo "${{ github.event.inputs.environment }}" | tr '[:lower:]' '[:upper:]')
     steps:
       - name: Checkout
         uses: actions/checkout@v2
