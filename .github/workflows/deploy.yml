@@ -3,6 +3,14 @@ name: Deploy production
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: 'Select environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - production
+          - staging
+        default: production
       tag_version:
         description: 'Tag version for the image'
         required: true
@@ -28,7 +36,7 @@ jobs:
       - name: Check if image exists
         id: check-image
         run: |
-          if docker manifest inspect ghcr.io/${{ github.repository_owner }}/offline.club:${{ github.event.inputs.tag_version }} > /dev/null 2>&1; then
+          if docker manifest inspect ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "Image exists, skipping build"
           else
@@ -59,72 +67,75 @@ jobs:
       - name: Make app envfile
         run: export | grep "secret_" | sed "s/declare -x secret_//" > .env
         env:
-          secret_SECRET_KEY: ${{ secrets.SECRET_KEY }} #+
-          secret_APP_HOST: ${{ secrets.APP_HOST }} #+
-          secret_MEDIA_UPLOAD_URL: ${{ secrets.PRODUCTION_MEDIA_UPLOAD_URL }} #+
-          secret_MEDIA_UPLOAD_CODE: ${{ secrets.PRODUCTION_MEDIA_UPLOAD_CODE }} #+
-          secret_SENTRY_DSN: ${{ secrets.SENTRY_DSN }} #+
-          secret_DEFAULT_FROM_EMAIL: ${{ secrets.PRODUCTION_DEFAULT_FROM_EMAIL }} #+
-          secret_EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
-          secret_EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
-          secret_EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
-          secret_TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }} #+
-          secret_TELEGRAM_BOT_URL: ${{ secrets.TELEGRAM_BOT_URL }} #+
-          secret_TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }} #+
-          secret_TELEGRAM_BOT_WEBHOOK_URL: ${{ secrets.TELEGRAM_BOT_WEBHOOK_URL}} #+
-          secret_TELEGRAM_CLUB_CHANNEL_URL: ${{ secrets.TELEGRAM_CLUB_CHANNEL_URL }}
-          secret_TELEGRAM_CLUB_CHANNEL_ID: ${{ secrets.TELEGRAM_CLUB_CHANNEL_ID }}
-          secret_TELEGRAM_CLUB_CHAT_URL: ${{ secrets.TELEGRAM_CLUB_CHAT_URL }}
-          secret_TELEGRAM_CLUB_CHAT_ID: ${{ secrets.TELEGRAM_CLUB_CHAT_ID }}
-          secret_TELEGRAM_ONLINE_CHANNEL_URL: ${{ secrets.TELEGRAM_ONLINE_CHANNEL_URL }}
-          secret_TELEGRAM_ONLINE_CHANNEL_ID: ${{ secrets.TELEGRAM_ONLINE_CHANNEL_ID }}
-          secret_TELEGRAM_HELP_DESK_BOT_QUESTION_CHANNEL_DISCUSSION_ID: ${{ secrets.TELEGRAM_HELP_DESK_BOT_QUESTION_CHANNEL_DISCUSSION_ID }}
-          secret_TELEGRAM_HELP_DESK_BOT_QUESTION_CHANNEL_ID: ${{ secrets.TELEGRAM_HELP_DESK_BOT_QUESTION_CHANNEL_ID }}
-          secret_TELEGRAM_HELP_DESK_BOT_TOKEN: ${{ secrets.TELEGRAM_HELP_DESK_BOT_TOKEN }}
-          secret_STRIPE_ACTIVE: ${{ secrets.STRIPE_ACTIVE }}
-          secret_STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
-          secret_STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
-          secret_STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          secret_STRIPE_CAMP_WEBHOOK_SECRET: ${{ secrets.STRIPE_CAMP_WEBHOOK_SECRET }}
-          secret_COINBASE_WEBHOOK_SECRET: ${{ secrets.COINBASE_WEBHOOK_SECRET }}
-          secret_PATREON_CLIENT_ID: ${{ secrets.PATREON_CLIENT_ID }}
-          secret_PATREON_CLIENT_SECRET: ${{ secrets.PATREON_CLIENT_SECRET }}
-          secret_JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
-          secret_WEBHOOK_SECRETS: ${{ secrets.WEBHOOK_SECRETS }}
-          secret_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }} #+
-          secret_POSTGRES_USER: ${{ secrets.POSTGRES_USER }} #+
-          secret_POSTGRES_DB: ${{ secrets.POSTGRES_DB }} #+
+          secret_APP_NAME: ${{ secrets[format('{0}_APP_NAME', github.event.inputs.environment | upper)] }}
+          secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', github.event.inputs.environment | upper)] }}
+          secret_APP_ENV: ${{ secrets[github.event.inputs.environment] }}
+          secret_APP_FAKER_LOCALE: en_US
+          secret_APP_FALLBACK_LOCALE: en
+          secret_APP_KEY: ${{ secrets[format('{0}_APP_KEY', github.event.inputs.environment | upper)] }}
+          secret_APP_LOCALE: en
+          secret_APP_MAINTENANCE_DRIVER: file
+          secret_APP_URL: ${{ secrets[format('{0}_APP_URL', github.event.inputs.environment | upper)] }}
+          secret_BCRYPT_ROUNDS: 12
+          secret_BROADCAST_CONNECTION: log
+          secret_CACHE_STORE: file
+          secret_DB_CONNECTION: pgsql
+          secret_DB_DATABASE: ${{ secrets[format('{0}_DB_DATABASE', github.event.inputs.environment | upper)] }}
+          secret_DB_HOST: ${{ secrets[format('{0}_DB_HOST', github.event.inputs.environment | upper)] }}
+          secret_DB_PASSWORD: ${{ secrets[format('{0}_DB_PASSWORD', github.event.inputs.environment | upper)] }}
+          secret_DB_PORT: ${{ secrets[format('{0}_DB_PORT', github.event.inputs.environment | upper)] }}
+          secret_DB_USERNAME: ${{ secrets[format('{0}_DB_USERNAME', github.event.inputs.environment | upper)] }}
+          secret_FILESYSTEM_DISK: public
+          secret_LOG_CHANNEL: stdout
+          secret_LOG_DEPRECATIONS_CHANNEL: null
+          secret_LOG_LEVEL: ${{ secrets[format('{0}_LOG_LEVEL', github.event.inputs.environment | upper)] }}
+          secret_LOG_STACK: stack
+          secret_MAIL_ENCRYPTION: tls
+          secret_MAIL_FROM_ADDRESS: ${{ secrets[format('{0}_MAIL_FROM_ADDRESS', github.event.inputs.environment | upper)] }}
+          secret_MAIL_FROM_NAME: ${APP_NAME}
+          secret_MAIL_HOST: ${{ secrets[format('{0}_MAIL_HOST', github.event.inputs.environment | upper)] }}
+          secret_MAIL_MAILER: smtp
+          secret_MAIL_PASSWORD: ${{ secrets[format('{0}_MAIL_PASSWORD', github.event.inputs.environment | upper)] }}
+          secret_MAIL_PORT: ${{ secrets[format('{0}_MAIL_PORT', github.event.inputs.environment | upper)] }}
+          secret_MAIL_SCHEME: null
+          secret_MAIL_USERNAME: ${{ secrets[format('{0}_MAIL_USERNAME', github.event.inputs.environment | upper)] }}
+          secret_PHP_CLI_SERVER_WORKERS: 4
+          secret_QUEUE_CONNECTION: redis
+          secret_REDIS_CLIENT: phpredis
+          secret_REDIS_HOST: ${{ secrets[format('{0}_REDIS_HOST', github.event.inputs.environment | upper)] }}
+          secret_REDIS_PASSWORD: null
+          secret_REDIS_PORT: ${{ secrets[format('{0}_REDIS_PORT', github.event.inputs.environment | upper)] }}
+          secret_SENTRY_LARAVEL_DSN: ${{ secrets[format('{0}_SENTRY_LARAVEL_DSN', github.event.inputs.environment | upper)] }}
+          secret_SESSION_DOMAIN: null
+          secret_SESSION_DRIVER: database
+          secret_SESSION_ENCRYPT: true
+          secret_SESSION_LIFETIME: ${{ secrets[format('{0}_SESSION_LIFETIME', github.event.inputs.environment | upper)] }}
+          secret_SESSION_PATH: /
+          secret_VITE_APP_NAME: ${APP_NAME}
 
       - name: Make postgres envfile
         run: export | grep "secret_" | sed "s/declare -x secret_//" > .postgres_env
         env:
-          secret_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          secret_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          secret_POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          secret_POSTGRES_PASSWORD: ${{ secrets[format('{0}_DB_PASSWORD', github.event.inputs.environment | upper)] }}
+          secret_POSTGRES_USER: ${{ secrets[format('{0}_DB_USERNAME', github.event.inputs.environment | upper)] }}
+          secret_POSTGRES_DB: ${{ secrets[format('{0}_DB_DATABASE', github.event.inputs.environment | upper)] }}
 
       - name: Make cloudflare envfile
         run: export | grep "secret_" | sed "s/declare -x secret_//" > .cloudflare_env
         env:
-          secret_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }} #+
-
-      - name: Make pepic envfile
-        run: export | grep "secret_" | sed "s/declare -x secret_//" > .pepic_env
-        env:
-          secret_BASE_URL: ${{ secrets.PRODUCTION_PEPIC_BASE_URL }} #+
-          secret_SECRET_CODE: ${{ secrets.PRODUCTION_PEPIC_SECRET_CODE }} #+
+          secret_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
 
       - run: echo "TAG_VERSION=${{ github.event.inputs.tag_version }}" >> .env
 
-      - run: echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }} && chmod 600 ${{ env.SSH_KEY_PATH }}
+      - run: echo "${{ secrets[format('{0}_SSH_KEY', github.event.inputs.environment | upper)] }}" > ${{ env.SSH_KEY_PATH }} && chmod 600 ${{ env.SSH_KEY_PATH }}
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .env ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/club/.env
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .env ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment | upper)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment | upper)] }}:/home/deploy/club/.env
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .postgres_env ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/database/.env
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .postgres_env ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment | upper)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment | upper)] }}:/home/deploy/database/.env
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/cloudflare/.env
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment | upper)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment | upper)] }}:/home/deploy/cloudflare/.env
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .pepic_env ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/pepic/.env
+      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.${{ github.event.inputs.environment }}".yml ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment | upper)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment | upper)] }}:/home/deploy/club/docker-compose.${{ github.event.inputs.environment }}.yml
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.production.yml ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }}:/home/deploy/club/docker-compose.production.yml
+      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', github.event.inputs.environment | upper)] }}@${{ secrets[format('{0}_SSH_HOST', github.event.inputs.environment | upper)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.${{ github.event.inputs.environment }}.yml --env-file=.env up -d && docker system prune --all --force"
 
-      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets.PRODUCTION_SSH_USERNAME }}@${{ secrets.PRODUCTION_SSH_HOST }} "cd /home/deploy/club && docker pull ghcr.io/${{ github.repository_owner }}/offline.club:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.production.yml --env-file=.env up -d && docker system prune --all --force"

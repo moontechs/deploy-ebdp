@@ -1,0 +1,100 @@
+version: "3.8"
+
+services:
+  club_app: &app
+    image: ghcr.io/moontechs/event-based-dating-platform:${TAG_VERSION:-latest}
+    container_name: club_app
+    networks:
+      - club_network
+    env_file:
+      - .env
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./storage:/app/public/storage
+    depends_on:
+      - keydb
+      - postgres
+    ports:
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+    labels:
+      reproxy.server: "xxx-111.xyz"
+      reproxy.route: "^/(.*)"
+      reproxy.dest: "/$$1"
+      reproxy.assets: "/storage:/storage"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
+        max-file: "3"
+
+  club_app_reproxy:
+    image: umputun/reproxy:latest
+    container_name: club_app_reproxy
+    restart: unless-stopped
+    networks:
+      - club_network
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - LISTEN=0.0.0.0:8080
+      - DOCKER_ENABLED=true
+      - MAX_SIZE=50M
+      - DEBUG=true
+      - KEEP_HOST=true
+    volumes:
+      - ./storage:./storage:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - club_app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
+        max-file: "3"
+
+  postgres:
+    image: postgres:17
+    container_name: club_postgres
+    restart: unless-stopped
+    user: "1000"
+    env_file:
+      - /home/deploy/database/.env
+    volumes:
+      - /home/deploy/database/data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - club_network
+
+  keydb:
+    image: eqalpha/keydb:latest
+    container_name: club_keydb
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - club_network
+
+  cloudflare:
+    image: cloudflare/cloudflared:latest
+    container_name: club_cloudflare
+    restart: unless-stopped
+    networks:
+      - club_network
+    env_file:
+      - /home/deploy/cloudflare/.env
+    command: tunnel --no-autoupdate run
+    volumes:
+      - /home/deploy/cloudflare/cloudflared:/etc/cloudflared
+
+networks:
+  club_network:
+    driver: bridge
