@@ -7,6 +7,7 @@ on:
         description: 'Select environment to deploy to'
         required: true
         type: choice
+        # should be uppercase to match the secret names
         options:
           - PRODUCTION
           - STAGING
@@ -67,11 +68,12 @@ jobs:
 
       - name: Make app envfile
         run: |
-          export | grep "secret_${{env.ENV_PREFIX}}_" | sed "s/declare -x secret_${{env.ENV_PREFIX}}_//" > .env
+          grep "secret_${{env.ENV_PREFIX}}_" | sed "s/declare -x secret_${{env.ENV_PREFIX}}_//" > .env
+          echo "APP_ENV: $(echo ${{ env.ENV_PREFIX }} | tr '[:upper:]' '[:lower:]')" >> .env
+
         env:
           secret_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
           secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', env.ENV_PREFIX)] }}
-          secret_APP_ENV: ${{ secrets[github.event.inputs.environment] }}
           secret_APP_FALLBACK_LOCALE: en
           secret_APP_KEY: ${{ secrets[format('{0}_APP_KEY', env.ENV_PREFIX)] }}
           secret_APP_LOCALE: en
@@ -131,10 +133,7 @@ jobs:
       - run: echo ${{ env.ENV_PREFIX }}
 
       - run: |
-          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
-          if [ "${{env.ENV_PREFIX}}" = "STAGING" ]; then
-            echo "${{ secrets.STAGING_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
-          fi
+          echo "${{ secrets[format('{0}_SSH_KEY', env.ENV_PREFIX)] }}" > ${{ env.SSH_KEY_PATH }}
           chmod 600 ${{ env.SSH_KEY_PATH }}
 
       - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/.env
@@ -143,6 +142,8 @@ jobs:
 
       - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/cloudflare/.env
 
-      - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.${{ env.ENV_PREFIX }}".yml ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/docker-compose.${{ env.ENV_PREFIX }}.yml
+      - run: |
+          export LOWER_ENV_PREFIX=$(echo ${{ env.ENV_PREFIX }} | tr '[:upper:]' '[:lower:]')
+          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.${LOWER_ENV_PREFIX}".yml ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/docker-compose.yml
 
-      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.${{ env.ENV_PREFIX }}.yml --env-file=.env up -d && docker system prune --all --force"
+      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.yml --env-file=.env up -d && docker system prune --all --force"
