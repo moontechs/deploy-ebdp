@@ -67,8 +67,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Make app envfile
-        run: |
-          grep "secret_" | sed "s/declare -x secret_//" > .env
+        run: export | grep "secret_" | sed "s/declare -x secret_//" > .env
         env:
           secret_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
           secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', env.ENV_PREFIX)] }}
