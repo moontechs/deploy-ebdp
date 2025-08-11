@@ -15,13 +15,13 @@ services:
       - keydb
       - postgres
     ports:
-      - "80:80"
-      - "443:443"
-#    labels:
-#      reproxy.server: "xxx-111.xyz"
-#      reproxy.route: "^/(.*)"
-#      reproxy.dest: "/$$1"
-#      reproxy.assets: "/storage:/storage"
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+    labels:
+      reproxy.server: "xxx-111.xyz"
+      reproxy.route: "^/(.*)"
+      reproxy.dest: "/$$1"
+      reproxy.assets: "/storage:/storage"
     logging:
       driver: "json-file"
       options:
