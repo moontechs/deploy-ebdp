@@ -69,7 +69,6 @@ jobs:
       - name: Make app envfile
         run: |
           grep "secret_" | sed "s/declare -x secret_//" > .env
-          echo "APP_ENV: $(echo ${{ env.ENV_PREFIX }} | tr '[:upper:]' '[:lower:]')" >> .env
         env:
           secret_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
           secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', env.ENV_PREFIX)] }}
@@ -127,9 +126,9 @@ jobs:
         env:
           secret_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
 
-      - run: echo "TAG_VERSION=${{ github.event.inputs.tag_version }}" >> .env
-
-      - run: echo ${{ env.ENV_PREFIX }}
+      - run: |
+          echo "TAG_VERSION: ${{ github.event.inputs.tag_version }}" >> .env
+          echo "APP_ENV: $(echo ${{ env.ENV_PREFIX }} | tr '[:upper:]' '[:lower:]')" >> .env
 
       - run: |
           echo "${{ secrets[format('{0}_SSH_KEY', env.ENV_PREFIX)] }}" > ${{ env.SSH_KEY_PATH }}
