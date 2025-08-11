@@ -67,9 +67,7 @@ jobs:
 
       - name: Make app envfile
         run: |
-          ENV_PREFIX=$(echo "${{ github.event.inputs.environment }}" | tr '[:lower:]' '[:upper:]')
-          export ENV_PREFIX
-          export | grep "secret_${ENV_PREFIX}_" | sed "s/declare -x secret_${ENV_PREFIX}_//" > .env
+          export | grep "secret_${env.ENV_PREFIX}_" | sed "s/declare -x secret_${env.ENV_PREFIX}_//" > .env
         env:
           secret_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
           secret_APP_DEBUG: ${{ secrets[format('{0}_APP_DEBUG', env.ENV_PREFIX)] }}
@@ -131,13 +129,11 @@ jobs:
       - run: echo "TAG_VERSION=${{ github.event.inputs.tag_version }}" >> .env
 
       - run: |
-          ENV_PREFIX=$(echo "${{ github.event.inputs.environment }}" | tr '[:lower:]' '[:upper:]')
           echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
-          if [ "$ENV_PREFIX" = "STAGING" ]; then
+          if [ "${env.ENV_PREFIX}" = "STAGING" ]; then
             echo "${{ secrets.STAGING_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
           fi
           chmod 600 ${{ env.SSH_KEY_PATH }}
-          export ENV_PREFIX
 
       - run: echo ${{ env.ENV_PREFIX }}
 
