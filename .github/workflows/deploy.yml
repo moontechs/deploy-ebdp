@@ -129,14 +129,14 @@ jobs:
 
       - run: echo "TAG_VERSION=${{ github.event.inputs.tag_version }}" >> .env
 
+      - run: echo ${{ env.ENV_PREFIX }}
+
       - run: |
           echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
           if [ "${env.ENV_PREFIX}" = "STAGING" ]; then
             echo "${{ secrets.STAGING_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
           fi
           chmod 600 ${{ env.SSH_KEY_PATH }}
-
-      - run: echo ${{ env.ENV_PREFIX }}
 
       - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/.env
 
