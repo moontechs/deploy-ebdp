@@ -17,8 +17,7 @@ services:
     ports:
       - "127.0.0.1:80:80"
       - "127.0.0.1:443:443"
-    command:
-      - make docker-server-php
+    command: make docker-server-php
     logging:
       driver: "json-file"
       options:
@@ -28,8 +27,7 @@ services:
   club_queue:
     <<: *app
     container_name: club_queue
-    command:
-      - make docker-server-queue
+    command: make docker-server-queue
     ports: []
     depends_on:
       - keydb
