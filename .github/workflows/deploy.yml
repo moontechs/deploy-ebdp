@@ -132,7 +132,7 @@ jobs:
 
       - run: |
           echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
-          if [ "${env.ENV_PREFIX}" = "STAGING" ]; then
+          if [ "${{env.ENV_PREFIX}}" = "STAGING" ]; then
             echo "${{ secrets.STAGING_SSH_KEY }}" > ${{ env.SSH_KEY_PATH }}
           fi
           chmod 600 ${{ env.SSH_KEY_PATH }}
