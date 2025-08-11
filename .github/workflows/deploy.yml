@@ -143,7 +143,7 @@ jobs:
       - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/cloudflare/.env
 
       - run: |
-          export LOWER_ENV_PREFIX=$(echo ${{ env.ENV_PREFIX }} | tr '[:upper:]' '[:lower:]')
+          export LOWER_ENV_PREFIX=$(echo "${{ env.ENV_PREFIX }}" | tr '[:upper:]' '[:lower:]')
           scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.${LOWER_ENV_PREFIX}".yml ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/docker-compose.yml
 
       - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.yml --env-file=.env up -d && docker system prune --all --force"
