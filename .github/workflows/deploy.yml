@@ -112,6 +112,7 @@ jobs:
           secret_SESSION_LIFETIME: ${{ secrets[format('{0}_SESSION_LIFETIME', env.ENV_PREFIX)] }}
           secret_SESSION_PATH: /
           secret_VITE_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
+          secret_LARAVEL_CLOUD: 1
 
       - name: Make postgres envfile
         run: export | grep "secret_" | sed "s/declare -x secret_//" > .postgres_env
