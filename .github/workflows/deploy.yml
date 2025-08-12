@@ -86,13 +86,13 @@ jobs:
           secret_DB_PORT: ${{ secrets[format('{0}_DB_PORT', env.ENV_PREFIX)] }}
           secret_DB_USERNAME: ${{ secrets[format('{0}_DB_USERNAME', env.ENV_PREFIX)] }}
           secret_FILESYSTEM_DISK: public
-          secret_LOG_CHANNEL: stdout
+          secret_LOG_CHANNEL: ${{ secrets[format('{0}_LOG_CHANNEL', env.ENV_PREFIX)] }}
           secret_LOG_DEPRECATIONS_CHANNEL: null
           secret_LOG_LEVEL: ${{ secrets[format('{0}_LOG_LEVEL', env.ENV_PREFIX)] }}
           secret_LOG_STACK: stack
           secret_MAIL_ENCRYPTION: tls
           secret_MAIL_FROM_ADDRESS: ${{ secrets[format('{0}_MAIL_FROM_ADDRESS', env.ENV_PREFIX)] }}
-          secret_MAIL_FROM_NAME: ${APP_NAME}
+          secret_MAIL_FROM_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
           secret_MAIL_HOST: ${{ secrets[format('{0}_MAIL_HOST', env.ENV_PREFIX)] }}
           secret_MAIL_MAILER: smtp
           secret_MAIL_PASSWORD: ${{ secrets[format('{0}_MAIL_PASSWORD', env.ENV_PREFIX)] }}
