@@ -133,13 +133,14 @@ jobs:
           echo "APP_ENV=$(echo ${{ env.ENV_PREFIX }} | tr '[:upper:]' '[:lower:]')" >> .env
 
       - name: Make fluentbit envfile
-        run: |
-          echo "OO_HOST=${{ secrets[format('{0}_FLUENTBIT_OO_HOST', env.ENV_PREFIX)] }}" > .fluentbit_env
-          echo "OO_PORT=${{ secrets[format('{0}_FLUENTBIT_OO_PORT', env.ENV_PREFIX)] }}" >> .fluentbit_env
-          echo "OO_ORG=${{ secrets[format('{0}_FLUENTBIT_OO_ORG', env.ENV_PREFIX)] }}" >> .fluentbit_env
-          echo "OO_STREAM=${{ secrets[format('{0}_FLUENTBIT_OO_STREAM', env.ENV_PREFIX)] }}" >> .fluentbit_env
-          echo "OO_USER=${{ secrets[format('{0}_FLUENTBIT_OO_USER', env.ENV_PREFIX)] }}" >> .fluentbit_env
-          echo "OO_PASS=${{ secrets[format('{0}_FLUENTBIT_OO_PASS', env.ENV_PREFIX)] }}" >> .fluentbit_env
+        run: export | grep "secret_" | sed "s/declare -x secret_//" > .fluentbit_env
+        env:
+          secret_OO_HOST: ${{ secrets[format('{0}_FLUENTBIT_OO_HOST', env.ENV_PREFIX)] }}
+          secret_OO_PORT: ${{ secrets[format('{0}_FLUENTBIT_OO_PORT', env.ENV_PREFIX)] }}
+          secret_OO_ORG: ${{ secrets[format('{0}_FLUENTBIT_OO_ORG', env.ENV_PREFIX)] }}
+          secret_OO_STREAM: ${{ secrets[format('{0}_FLUENTBIT_OO_STREAM', env.ENV_PREFIX)] }}
+          secret_OO_USER: ${{ secrets[format('{0}_FLUENTBIT_OO_USER', env.ENV_PREFIX)] }}
+          secret_OO_PASS: ${{ secrets[format('{0}_FLUENTBIT_OO_PASS', env.ENV_PREFIX)] }}
 
       - run: |
           echo "${{ secrets[format('{0}_SSH_KEY', env.ENV_PREFIX)] }}" > ${{ env.SSH_KEY_PATH }}
