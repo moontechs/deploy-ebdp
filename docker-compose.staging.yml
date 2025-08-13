@@ -69,6 +69,7 @@ services:
 
   fluentbit:
     image: fluent/fluent-bit:2.2
+    container_name: club_fluentbit
     env_file:
       - /home/deploy/fluentbit/.env
     volumes:
