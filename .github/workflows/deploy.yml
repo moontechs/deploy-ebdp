@@ -132,6 +132,15 @@ jobs:
           echo "TAG_VERSION=${{ github.event.inputs.tag_version }}" >> .env
           echo "APP_ENV=$(echo ${{ env.ENV_PREFIX }} | tr '[:upper:]' '[:lower:]')" >> .env
 
+      - name: Make fluentbit envfile
+        run: |
+          echo "OO_HOST=${{ secrets[format('{0}_FLUENTBIT_OO_HOST', env.ENV_PREFIX)] }}" > .fluentbit_env
+          echo "OO_PORT=${{ secrets[format('{0}_FLUENTBIT_OO_PORT', env.ENV_PREFIX)] }}" >> .fluentbit_env
+          echo "OO_ORG=${{ secrets[format('{0}_FLUENTBIT_OO_ORG', env.ENV_PREFIX)] }}" >> .fluentbit_env
+          echo "OO_STREAM=${{ secrets[format('{0}_FLUENTBIT_OO_STREAM', env.ENV_PREFIX)] }}" >> .fluentbit_env
+          echo "OO_USER=${{ secrets[format('{0}_FLUENTBIT_OO_USER', env.ENV_PREFIX)] }}" >> .fluentbit_env
+          echo "OO_PASS=${{ secrets[format('{0}_FLUENTBIT_OO_PASS', env.ENV_PREFIX)] }}" >> .fluentbit_env
+
       - run: |
           echo "${{ secrets[format('{0}_SSH_KEY', env.ENV_PREFIX)] }}" > ${{ env.SSH_KEY_PATH }}
           chmod 600 ${{ env.SSH_KEY_PATH }}
@@ -141,6 +150,10 @@ jobs:
       - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .postgres_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/database/.env
 
       - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/cloudflare/.env
+
+      - run: |
+          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .fluentbit_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/.env
+          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} configs/fluentbit.conf ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/fluentbit.conf
 
       - run: |
           export LOWER_ENV_PREFIX=$(echo "${{ env.ENV_PREFIX }}" | tr '[:upper:]' '[:lower:]')
