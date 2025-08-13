@@ -113,6 +113,8 @@ jobs:
           secret_SESSION_PATH: /
           secret_VITE_APP_NAME: ${{ secrets[format('{0}_APP_NAME', env.ENV_PREFIX)] }}
           secret_LARAVEL_CLOUD: 1
+          secret_PUID: 1000
+          secret_PGID: 1000
 
       - name: Make postgres envfile
         run: export | grep "secret_" | sed "s/declare -x secret_//" > .postgres_env
@@ -154,7 +156,7 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: markdown
           message: |
-            🚀 **Deploy**
+            🚀 **Deploy Notification**
 
             **Env:** ${{ github.event.inputs.environment }}
             **Version:** ${{ github.event.inputs.tag_version }}
