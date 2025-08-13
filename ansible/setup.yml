@@ -8,6 +8,7 @@
     project_dir: "{{ deploy_home }}/club"
     database_dir: "{{ deploy_home }}/database"
     cloudflare_dir: "{{ deploy_home }}/cloudflare"
+    fluentbit_dir: "{{ deploy_home }}/fluentbit"
 
   tasks:
     - name: Create deploy user
@@ -49,10 +50,10 @@
         mode: '0755'
       loop:
         - "{{ project_dir }}"
-        - "{{ project_dir }}/storage/app/public"
         - "{{ database_dir }}"
         - "{{ database_dir }}/data"
         - "{{ cloudflare_dir }}"
+        - "{{ fluentbit_dir }}"
 
 #    - name: Install Docker dependencies
 #      apt:
