@@ -15,7 +15,7 @@ on:
       tag_version:
         description: 'Tag version for the image'
         required: true
-        default: '0.2.14'
+        default: '0.4.6'
 
 jobs:
   check-and-build:
