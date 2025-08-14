@@ -16,37 +16,9 @@ transforms:
     inputs:
       - docker_logs
     source: |
-      # Parse container metadata
-      .container_name = .container_name
-      .container_id = .container_id
-      .container_short_id = slice!(.container_id, 0, 12)
-      
-      # Map container names to service names
-      .service = if contains(.container_name, "club_app") {
-        "club_app"
-      } else if contains(.container_name, "club_queue") {
-        "club_queue"
-      } else if contains(.container_name, "club_postgres") || contains(.container_name, "postgres") {
-        "postgres"
-      } else {
-        "unknown"
-      }
-      
       # Add environment and source metadata
       .environment = "staging"
       .source = "docker"
-      
-      # Parse JSON logs if the message is a JSON string
-      parsed_log = parse_json(.message) ?? null
-      if parsed_log != null {
-        # If message is valid JSON, merge the parsed fields
-        . = merge(., parsed_log)
-        .original_message = .message
-        .message_type = "json"
-      } else {
-        .message_type = "text"
-      }
-      
       # Ensure timestamp consistency
       .@timestamp = now()
 

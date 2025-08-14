@@ -10,7 +10,7 @@ on:
         options:
           - production
           - staging
-        default: production
+        default: staging
 
 jobs:
   production:
