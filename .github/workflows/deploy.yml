@@ -155,6 +155,7 @@ jobs:
       - run: |
           scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .fluentbit_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/.env
           scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} configs/fluentbit.conf ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/fluentbit.conf
+          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} configs/container_enrichment.lua ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/container_enrichment.lua
 
       - run: |
           export LOWER_ENV_PREFIX=$(echo "${{ env.ENV_PREFIX }}" | tr '[:upper:]' '[:lower:]')
