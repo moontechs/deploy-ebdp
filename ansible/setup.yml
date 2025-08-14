@@ -9,6 +9,7 @@
     database_dir: "{{ deploy_home }}/database"
     cloudflare_dir: "{{ deploy_home }}/cloudflare"
     fluentbit_dir: "{{ deploy_home }}/fluentbit"
+    vector_dir: "{{ deploy_home }}/vector"
 
   tasks:
     - name: Create deploy user
@@ -54,6 +55,7 @@
         - "{{ database_dir }}/data"
         - "{{ cloudflare_dir }}"
         - "{{ fluentbit_dir }}"
+        - "{{ vector_dir }}"
 
 #    - name: Install Docker dependencies
 #      apt:

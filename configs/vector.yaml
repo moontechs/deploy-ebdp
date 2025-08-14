@@ -1,0 +1,72 @@
+sources:
+  docker_logs:
+    type: docker_logs
+    include_containers:
+      - "club_app"
+      - "club_queue" 
+      - "club_postgres"
+    include_labels:
+      - "com.docker.compose.service"
+    auto_partial_merge: true
+    partial_event_marker_field: "_partial"
+
+transforms:
+  parse_logs:
+    type: remap
+    inputs:
+      - docker_logs
+    source: |
+      # Parse container metadata
+      .container_name = .container_name
+      .container_id = .container_id
+      .container_short_id = slice!(.container_id, 0, 12)
+      
+      # Map container names to service names
+      .service = if contains(.container_name, "club_app") {
+        "club_app"
+      } else if contains(.container_name, "club_queue") {
+        "club_queue"
+      } else if contains(.container_name, "club_postgres") || contains(.container_name, "postgres") {
+        "postgres"
+      } else {
+        "unknown"
+      }
+      
+      # Add environment and source metadata
+      .environment = "staging"
+      .source = "docker"
+      
+      # Parse JSON logs if the message is a JSON string
+      parsed_log = parse_json(.message) ?? null
+      if parsed_log != null {
+        # If message is valid JSON, merge the parsed fields
+        . = merge(., parsed_log)
+        .original_message = .message
+        .message_type = "json"
+      } else {
+        .message_type = "text"
+      }
+      
+      # Ensure timestamp consistency
+      .@timestamp = now()
+
+sinks:
+  http_output:
+    type: http
+    inputs:
+      - parse_logs
+    uri: "https://${OO_HOST}:${OO_PORT}/api/${OO_ORG}/${OO_STREAM}/_json"
+    method: post
+    auth:
+      strategy: basic
+      user: "${OO_USER}"
+      password: "${OO_PASS}"
+    encoding:
+      codec: json
+    compression: gzip
+    batch:
+      max_events: 100
+      timeout_secs: 5
+    request:
+      headers:
+        Content-Type: "application/json"

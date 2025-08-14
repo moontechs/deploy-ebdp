@@ -77,17 +77,16 @@ services:
         max-size: "100M"
         max-file: "3"
 
-  fluentbit:
-    image: fluent/fluent-bit:2.2
-    container_name: club_fluentbit
+  vector:
+    image: timberio/vector:0.38.0-debian
+    container_name: club_vector
     env_file:
-      - /home/deploy/fluentbit/.env
+      - /home/deploy/vector/.env
     volumes:
-      - /home/deploy/fluentbit/fluentbit.conf:/fluent-bit/etc/fluent-bit.conf:ro
-      - /home/deploy/fluentbit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
-      - /home/deploy/fluentbit/container_enrichment.lua:/fluent-bit/etc/container_enrichment.lua:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /home/deploy/vector/vector.yaml:/etc/vector/vector.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - club_network
 
   cloudflare:
     image: cloudflare/cloudflared:latest

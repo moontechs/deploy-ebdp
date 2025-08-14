@@ -132,8 +132,8 @@ jobs:
           echo "TAG_VERSION=${{ github.event.inputs.tag_version }}" >> .env
           echo "APP_ENV=$(echo ${{ env.ENV_PREFIX }} | tr '[:upper:]' '[:lower:]')" >> .env
 
-      - name: Make fluentbit envfile
-        run: export | grep "secret_" | sed "s/declare -x secret_//" > .fluentbit_env
+      - name: Make vector envfile
+        run: export | grep "secret_" | sed "s/declare -x secret_//" > .vector_env
         env:
           secret_OO_HOST: ${{ secrets[format('{0}_FLUENTBIT_OO_HOST', env.ENV_PREFIX)] }}
           secret_OO_PORT: ${{ secrets[format('{0}_FLUENTBIT_OO_PORT', env.ENV_PREFIX)] }}
@@ -153,10 +153,8 @@ jobs:
       - run: scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .cloudflare_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/cloudflare/.env
 
       - run: |
-          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .fluentbit_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/.env
-          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} configs/fluentbit.conf ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/fluentbit.conf
-          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} configs/container_enrichment.lua ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/container_enrichment.lua
-          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} configs/parsers.conf ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/fluentbit/parsers.conf
+          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} .vector_env ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/vector/.env
+          scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} configs/vector.yaml ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/vector/vector.yaml
 
       - run: |
           export LOWER_ENV_PREFIX=$(echo "${{ env.ENV_PREFIX }}" | tr '[:upper:]' '[:lower:]')
