@@ -84,6 +84,7 @@ services:
       - /home/deploy/fluentbit/.env
     volumes:
       - /home/deploy/fluentbit/fluentbit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - /home/deploy/fluentbit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
       - /home/deploy/fluentbit/container_enrichment.lua:/fluent-bit/etc/container_enrichment.lua:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
