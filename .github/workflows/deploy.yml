@@ -115,6 +115,8 @@ jobs:
           secret_LARAVEL_CLOUD: 1
           secret_PUID: 1000
           secret_PGID: 1000
+          secret_TELEGRAM_CHAT_ID: ${{ secrets[format('{0}_TELEGRAM_CHAT_ID', env.ENV_PREFIX)] }}
+          secret_TELEGRAM_BOT_TOKEN: ${{ secrets[format('{0}_TELEGRAM_BOT_TOKEN', env.ENV_PREFIX)] }}
 
       - name: Make postgres envfile
         run: export | grep "secret_" | sed "s/declare -x secret_//" > .postgres_env
@@ -160,7 +162,7 @@ jobs:
           export LOWER_ENV_PREFIX=$(echo "${{ env.ENV_PREFIX }}" | tr '[:upper:]' '[:lower:]')
           scp -o StrictHostKeyChecking=no -i ${{ env.SSH_KEY_PATH }} ./docker-compose.${LOWER_ENV_PREFIX}.yml ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }}:/home/deploy/club/docker-compose.yml
 
-      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.yml --env-file=.env up -d && docker system prune --all --force"
+      - run: ssh -i ${{ env.SSH_KEY_PATH }} ${{ secrets[format('{0}_SSH_USERNAME', env.ENV_PREFIX)] }}@${{ secrets[format('{0}_SSH_HOST', env.ENV_PREFIX)] }} "cd /home/deploy/club && docker pull ghcr.io/moontechs/event-based-dating-platform:${{ github.event.inputs.tag_version }} && docker compose -f docker-compose.yml --env-file=.env up -d --remove-orphans && docker system prune --all --force"
 
       - name: Send Telegram notification
         if: always()
